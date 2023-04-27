@@ -27,3 +27,4 @@ Route::get('/about', [StaticPagesController::class, 'about'])->name('about');
  * 用户的相关路由
  */
 Route::get('signup', [UsersController::class, 'create'])->name('signup');
+Route::resource('users', UsersController::class);
