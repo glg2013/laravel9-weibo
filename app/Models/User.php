@@ -70,4 +70,58 @@ class User extends Authenticatable
     {
         return $this->statuses()->orderByDesc('created_at');
     }
+
+    /**
+     * 获取粉丝关系列表
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function followers()
+    {
+        return $this->belongsToMany(User::class, 'followers', 'user_id', 'follower_id');
+    }
+
+    /**
+     * 获取关注的人列表
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function followings()
+    {
+        return $this->belongsToMany(User::class, 'followers', 'follower_id', 'user_id');
+    }
+
+    /**
+     * 关注
+     * @param $user_ids
+     * @return void
+     */
+    public function follow($user_ids)
+    {
+        if (!is_array($user_ids)) {
+            $user_ids = compact('user_ids');
+        }
+        $this->followings()->sync($user_ids, false);
+    }
+
+    /**
+     * 取关
+     * @param $user_ids
+     * @return void
+     */
+    public function unfollow($user_ids)
+    {
+        if (!is_array($user_ids)) {
+            $user_ids = compact('user_ids');
+        }
+        $this->followings()->detach($user_ids);
+    }
+
+    /**
+     * 判断当前登录的用户是否关注了 $user_id 这名用户
+     * @param $user_id
+     * @return bool
+     */
+    public function isFollowing($user_id)
+    {
+        return $this->followings()->get()->contains($user_id);
+    }
 }
