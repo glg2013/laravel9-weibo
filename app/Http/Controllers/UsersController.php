@@ -5,13 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 
 class UsersController extends Controller
 {
     public function __construct()
     {
         $this->middleware('auth', [
-            'except'    =>  ['show', 'create', 'store', 'index']
+            'except'    =>  ['show', 'create', 'store', 'index', 'confirmEmail']
         ]);
 
         $this->middleware('guest', [
@@ -49,10 +50,15 @@ class UsersController extends Controller
             'password'  =>  bcrypt($request->input('password'))
         ]);
 
+        /*
         // 注册后直接登录，增强体验
         Auth::login($user);
         session()->flash('success', '欢迎，您将在这里开启一段新的旅程！');
         return redirect()->route('users.show', compact('user'));
+        */
+        $this->sendEmailConfirmationTo($user);
+        session()->flash('success', '验证邮件已经发送至您的注册邮箱，请注意查收！');
+        return redirect()->route('home');
     }
 
     public function edit(User $user)
@@ -91,5 +97,32 @@ class UsersController extends Controller
         $user->delete();
         session()->flash('success', '成功删除用户 ' . $user->getAttribute('name') . ' ！');
         return redirect()->back();
+    }
+
+    public function confirmEmail($token)
+    {
+        $user = User::query()->where('activation_token', $token)->firstOrFail();
+
+        $user->setAttribute('activated', true);
+        $user->setAttribute('activation_token', null);
+        $user->save();
+
+        Auth::login($user);
+        session()->flash('success', '恭喜您，验证成功，将开启一段奇妙的旅程！');
+        return redirect()->route('users.show', compact('user'));
+    }
+
+    protected function sendEmailConfirmationTo($user)
+    {
+        $view = 'emails.confirm';
+        $data = compact('user');
+        $from = 'admin@weibo.test';
+        $name = 'admin';
+        $to = $user->email;
+        $subject = "感谢注册 Weibo 应用！请确认你的邮箱。";
+
+        Mail::send($view, $data, function ($message) use ($from, $name, $to, $subject) {
+            $message->from($from, $name)->to($to)->subject($subject);
+        });
     }
 }
