@@ -33,4 +33,9 @@ class UserPolicy
     {
         return $currentUser->getAttribute('is_admin') && $currentUser->id !== $user->id;
     }
+
+    public function follow(User $currentUser, User $user)
+    {
+        return $currentUser->getAttribute('id') !== $user->getAttribute('id');
+    }
 }
